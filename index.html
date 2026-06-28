@@ -305,7 +305,11 @@
 
         function loadLinks() {
             const stored = localStorage.getItem(STORAGE_KEY);
-            links = stored ? JSON.parse(stored) : [];
+            links = stored ? JSON.parse(stored) : [
+                { name: 'Product P&L Tracker', url: 'https://product-pl-tracker.netlify.app/' },
+                { name: 'Time Allocation Board', url: 'https://time-allocation-board.netlify.app/' },
+                { name: 'Family Dashboard', url: 'https://kurgel-dashboard.netlify.app/' }
+            ];
             renderLinks();
         }
 
