@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .dashboard-link {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-decoration: none;
+            color: #666;
+            transition: opacity 0.2s;
+            z-index: 1000;
+        }
+
+        .dashboard-link:hover {
+            opacity: 0.7;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 28px;
+            color: #333;
+        }
+
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #333;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button:active {
+            background: #222;
+        }
+
+        .links-section {
+            display: grid;
+            gap: 15px;
+        }
+
+        .link-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .link-card-header {
+            flex-grow: 1;
+        }
+
+        .link-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .link-url {
+            font-size: 13px;
+            color: #999;
+            word-break: break-all;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .link-card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .link-card-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .btn-open {
+            background: #0066cc;
+        }
+
+        .btn-open:hover {
+            background: #0052a3;
+        }
+
+        .btn-edit {
+            background: #666;
+        }
+
+        .btn-edit:hover {
+            background: #888;
+        }
+
+        .btn-delete {
+            background: #cc3333;
+        }
+
+        .btn-delete:hover {
+            background: #aa2222;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .btn-cancel {
+            background: #999;
+        }
+
+        .btn-cancel:hover {
+            background: #bbb;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .form-section,
+            .link-card {
+                padding: 15px;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="https://kurgel-dashboard.netlify.app/" target="_blank" class="dashboard-link">Dashboard</a>
+
+    <div class="container">
+        <h1>Link Board</h1>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="linkName">Link Name</label>
+                <input type="text" id="linkName" placeholder="e.g., Gmail, GitHub, News">
+            </div>
+            <div class="form-group">
+                <label for="linkUrl">Link URL</label>
+                <input type="text" id="linkUrl" placeholder="e.g., https://gmail.com">
+            </div>
+            <button onclick="addLink()">Add Link</button>
+        </div>
+
+        <div class="links-section" id="linksList"></div>
+
+        <div class="empty-state" id="emptyState">
+            <p>No links yet. Add one to get started!</p>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2>Edit Link</h2>
+            <div class="form-group">
+                <label for="editName">Link Name</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="form-group">
+                <label for="editUrl">Link URL</label>
+                <input type="text" id="editUrl">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button onclick="saveEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'linkBoard_links';
+        let links = [];
+        let editingIndex = null;
+
+        function loadLinks() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            links = stored ? JSON.parse(stored) : [];
+            renderLinks();
+        }
+
+        function saveLinks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+        }
+
+        function addLink() {
+            const name = document.getElementById('linkName').value.trim();
+            const url = document.getElementById('linkUrl').value.trim();
+
+            if (!name || !url) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            links.push({ name, url });
+            saveLinks();
+            document.getElementById('linkName').value = '';
+            document.getElementById('linkUrl').value = '';
+            renderLinks();
+        }
+
+        function deleteLink(index) {
+            if (confirm('Delete this link?')) {
+                links.splice(index, 1);
+                saveLinks();
+                renderLinks();
+            }
+        }
+
+        function openEditModal(index) {
+            editingIndex = index;
+            const link = links[index];
+            document.getElementById('editName').value = link.name;
+            document.getElementById('editUrl').value = link.url;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            editingIndex = null;
+        }
+
+        function saveEdit() {
+            const name = document.getElementById('editName').value.trim();
+            const url = document.getElementById('editUrl').value.trim();
+
+            if (!name || !url) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            links[editingIndex] = { name, url };
+            saveLinks();
+            closeModal();
+            renderLinks();
+        }
+
+        function openLink(url) {
+            window.open(url, '_blank');
+        }
+
+        function renderLinks() {
+            const container = document.getElementById('linksList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (links.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = links.map((link, index) => `
+                <div class="link-card">
+                    <div class="link-card-header">
+                        <div class="link-name">${escapeHtml(link.name)}</div>
+                        <div class="link-url">${escapeHtml(link.url)}</div>
+                    </div>
+                    <div class="link-card-actions">
+                        <button class="btn-open" onclick="openLink('${escapeHtml(link.url)}')">Open</button>
+                        <button class="btn-edit" onclick="openEditModal(${index})">Edit</button>
+                        <button class="btn-delete" onclick="deleteLink(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.getElementById('linkName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('linkUrl').focus();
+        });
+
+        document.getElementById('linkUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addLink();
+        });
+
+        loadLinks();
+    </script>
+</body>
+</html>

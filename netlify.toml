@@ -1,0 +1,14 @@
+[build]
+  command = "echo 'No build required for static site'"
+  publish = "."
+
+[context.production]
+  command = "echo 'Deploying to production'"
+
+[context.deploy-preview]
+  command = "echo 'Preview deployment'"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
