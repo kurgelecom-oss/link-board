@@ -303,13 +303,28 @@
         let links = [];
         let editingIndex = null;
 
+        const DEFAULT_LINKS = [
+            { name: 'Product P&L Tracker', url: 'https://product-pl-tracker.netlify.app/' },
+            { name: 'Time Allocation Board', url: 'https://time-allocation-board.netlify.app/' },
+            { name: 'Family Dashboard', url: 'https://kurgel-dashboard.netlify.app/' },
+            { name: 'Ecom Launchpad (THE ENGINE)', url: 'https://ecom-launchpad-mentor.netlify.app/' },
+            { name: 'Product Test Engine', url: 'https://product-test-engine.netlify.app/' },
+            { name: 'LIARE Store', url: 'https://tryliare.shop/' },
+            { name: 'LIARE PDP', url: 'https://tryliare.shop/products/liare' },
+            { name: 'Korean Hair Growth Serum PDP', url: 'https://tryliare.shop/products/korean-hair-growth-serum' }
+        ];
+
         function loadLinks() {
             const stored = localStorage.getItem(STORAGE_KEY);
-            links = stored ? JSON.parse(stored) : [
-                { name: 'Product P&L Tracker', url: 'https://product-pl-tracker.netlify.app/' },
-                { name: 'Time Allocation Board', url: 'https://time-allocation-board.netlify.app/' },
-                { name: 'Family Dashboard', url: 'https://kurgel-dashboard.netlify.app/' }
-            ];
+            links = stored ? JSON.parse(stored) : [];
+            // Hard-coded links always present, even on devices with old localStorage
+            const normalize = u => u.replace(/\/+$/, '');
+            DEFAULT_LINKS.forEach(d => {
+                if (!links.some(l => normalize(l.url) === normalize(d.url))) {
+                    links.push(d);
+                }
+            });
+            saveLinks();
             renderLinks();
         }
 
