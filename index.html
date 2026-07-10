@@ -308,6 +308,13 @@
 
         <div class="form-section">
             <div class="form-group">
+                <label for="syncToken">Sync Token (needed once per device to save changes)</label>
+                <input type="password" id="syncToken" placeholder="paste your sync token">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
                 <label for="linkName">Link Name</label>
                 <input type="text" id="linkName" placeholder="e.g., Gmail, GitHub, News">
             </div>
@@ -359,6 +366,7 @@
 
     <script>
         const STORAGE_KEY = 'linkBoard_links';
+        const TOKEN_KEY = 'linkBoard_writeToken';
         const API_URL = '/api/links';
         let links = [];
         let editingIndex = null;
@@ -428,12 +436,21 @@
 
         async function persistLinks() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+            const token = localStorage.getItem(TOKEN_KEY) || '';
+            if (!token) {
+                setSyncStatus('Saved locally only — enter your Sync Token above to save to the cloud', true);
+                return false;
+            }
             try {
                 const res = await fetch(API_URL, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-link-board-token': token },
                     body: JSON.stringify(links)
                 });
+                if (res.status === 401) {
+                    setSyncStatus('Saved locally only — Sync Token is wrong, check it above', true);
+                    return false;
+                }
                 if (!res.ok) throw new Error('save failed: ' + res.status);
                 setSyncStatus('Synced across devices');
                 return true;
@@ -535,8 +552,9 @@
             document.getElementById('editUrl').value = link.url;
             document.getElementById('editImage').value = '';
             const preview = document.getElementById('editImagePreview');
-            if (link.image) {
-                preview.src = link.image;
+            const img = safeImage(link.image);
+            if (img) {
+                preview.src = img;
                 preview.classList.add('active');
             } else {
                 preview.classList.remove('active');
@@ -581,6 +599,12 @@
             window.open(url, '_blank');
         }
 
+        const SAFE_IMAGE_RE = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
+
+        function safeImage(image) {
+            return typeof image === 'string' && SAFE_IMAGE_RE.test(image) ? image : null;
+        }
+
         function renderLinks() {
             const container = document.getElementById('linksList');
             const emptyState = document.getElementById('emptyState');
@@ -592,9 +616,11 @@
             }
 
             emptyState.style.display = 'none';
-            container.innerHTML = links.map((link, index) => `
+            container.innerHTML = links.map((link, index) => {
+                const img = safeImage(link.image);
+                return `
                 <div class="link-card">
-                    ${link.image ? `<img class="link-image" src="${link.image}" alt="${escapeHtml(link.name)}">` : ''}
+                    ${img ? `<img class="link-image" src="${escapeHtml(img)}" alt="${escapeHtml(link.name)}">` : ''}
                     <div class="link-card-header">
                         <div class="link-name">${escapeHtml(link.name)}</div>
                         <div class="link-url">${escapeHtml(link.url)}</div>
@@ -605,7 +631,8 @@
                         <button class="btn-delete" onclick="deleteLink(${index})">Delete</button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function escapeHtml(text) {
@@ -621,6 +648,14 @@
 
         document.getElementById('editModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
+        });
+
+        const syncTokenInput = document.getElementById('syncToken');
+        syncTokenInput.value = localStorage.getItem(TOKEN_KEY) || '';
+        syncTokenInput.addEventListener('change', function() {
+            const val = syncTokenInput.value.trim();
+            if (val) localStorage.setItem(TOKEN_KEY, val);
+            else localStorage.removeItem(TOKEN_KEY);
         });
 
         document.getElementById('linkName').addEventListener('keypress', function(e) {
