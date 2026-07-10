@@ -2,11 +2,20 @@
   command = "echo 'No build required for static site'"
   publish = "."
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [context.production]
   command = "echo 'Deploying to production'"
 
 [context.deploy-preview]
   command = "echo 'Preview deployment'"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
