@@ -306,7 +306,11 @@
 
         <div class="sync-status" id="syncStatus"></div>
 
-        <div class="form-section">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <a href="#" id="toggleTokenLink" onclick="toggleSyncTokenSection(event)" style="font-size: 12px; color: #999;">Sync Token settings</a>
+        </div>
+
+        <div class="form-section" id="syncTokenSection" style="display: none;">
             <div class="form-group">
                 <label for="syncToken">Sync Token (needed once per device to save changes)</label>
                 <input type="text" id="syncToken" placeholder="paste your sync token">
@@ -439,7 +443,8 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
             const token = localStorage.getItem(TOKEN_KEY) || '';
             if (!token) {
-                setSyncStatus('Saved locally only — enter your Sync Token above to save to the cloud', true);
+                setSyncStatus('Saved locally only — enter your Sync Token below to save to the cloud', true);
+                showSyncTokenSection();
                 return false;
             }
             try {
@@ -449,7 +454,8 @@
                     body: JSON.stringify(links)
                 });
                 if (res.status === 401) {
-                    setSyncStatus('Saved locally only — Sync Token is wrong, check it above', true);
+                    setSyncStatus('Saved locally only — Sync Token is wrong, check it below', true);
+                    showSyncTokenSection();
                     return false;
                 }
                 if (!res.ok) throw new Error('save failed: ' + res.status);
@@ -654,6 +660,24 @@
         const syncTokenInput = document.getElementById('syncToken');
         syncTokenInput.value = localStorage.getItem(TOKEN_KEY) || '';
 
+        function showSyncTokenSection() {
+            document.getElementById('syncTokenSection').style.display = 'block';
+        }
+
+        function hideSyncTokenSection() {
+            document.getElementById('syncTokenSection').style.display = 'none';
+        }
+
+        function toggleSyncTokenSection(e) {
+            if (e) e.preventDefault();
+            const section = document.getElementById('syncTokenSection');
+            if (section.style.display === 'none') showSyncTokenSection();
+            else hideSyncTokenSection();
+        }
+
+        // Only show on first run (no token saved yet) — otherwise stay tucked away
+        if (!localStorage.getItem(TOKEN_KEY)) showSyncTokenSection();
+
         function saveSyncToken() {
             const val = syncTokenInput.value.trim();
             if (val) localStorage.setItem(TOKEN_KEY, val);
@@ -662,7 +686,10 @@
             const btn = document.getElementById('saveTokenBtn');
             const original = btn.textContent;
             btn.textContent = val ? 'Saved ✓' : 'Cleared';
-            setTimeout(() => { btn.textContent = original; }, 1500);
+            setTimeout(() => {
+                btn.textContent = original;
+                if (val) hideSyncTokenSection();
+            }, 1200);
 
             if (val) setSyncStatus('Sync Token saved on this device');
         }
