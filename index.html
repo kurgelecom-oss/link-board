@@ -13,46 +13,89 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
+            background: #0f1115;
+            color: #e8e9ec;
+            padding: 24px 20px 60px;
             min-height: 100vh;
         }
 
-        .dashboard-link {
+        .top-bar {
             position: fixed;
             top: 15px;
             right: 15px;
-            background: rgba(0, 0, 0, 0.1);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            text-decoration: none;
-            color: #666;
-            transition: opacity 0.2s;
+            display: flex;
+            gap: 10px;
             z-index: 1000;
         }
 
-        .dashboard-link:hover {
+        .top-bar a {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-decoration: none;
+            color: #aab;
+            transition: opacity 0.2s;
+        }
+
+        .top-bar a:hover {
             opacity: 0.7;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
         h1 {
-            margin-bottom: 30px;
-            font-size: 28px;
-            color: #333;
+            font-size: 30px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
         }
 
-        .form-section {
-            background: white;
+        .page-subtitle {
+            font-size: 14px;
+            color: #7d8290;
+            margin-top: 6px;
+            margin-bottom: 24px;
+        }
+
+        .panel {
+            background: #1c1f26;
+            border: 1px solid #2a2d34;
             padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 14px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .panel-header h2 {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            color: #7d8290;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            width: auto;
+            line-height: 1;
+        }
+
+        .panel-close:hover {
+            color: #fff;
+            background: none;
         }
 
         .form-group {
@@ -65,73 +108,168 @@
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #555;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #9aa0ac;
             font-weight: 500;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 12px 14px;
+            background: #12141a;
+            border: 1px solid #333844;
+            border-radius: 9px;
+            font-size: 15px;
             font-family: inherit;
+            color: #eee;
+        }
+
+        input[type="text"]::placeholder {
+            color: #5c6270;
         }
 
         input[type="text"]:focus {
             outline: none;
-            border-color: #333;
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+            border-color: #4f8cff;
+            box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
         }
 
         button {
             width: 100%;
-            padding: 10px;
-            background: #333;
+            padding: 13px;
+            background: #4f8cff;
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 9px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
         }
 
         button:hover {
-            background: #555;
+            background: #3f78e6;
         }
 
         button:active {
-            background: #222;
+            background: #3468cc;
         }
 
-        .links-section {
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .links-grid {
             display: grid;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 14px;
+            /* No max-height or overflow here on purpose — the page just keeps
+               growing/scrolling naturally as more tiles are added. */
         }
 
-        .link-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .tile {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.12s ease;
         }
 
-        .link-card-header {
-            flex-grow: 1;
+        .tile:active {
+            transform: scale(0.96);
         }
 
-        .link-image {
+        .tile-image {
+            position: absolute;
+            inset: 0;
             width: 100%;
-            max-height: 160px;
+            height: 100%;
             object-fit: cover;
-            border-radius: 6px;
-            display: block;
+        }
+
+        .tile-scrim {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0) 55%);
+        }
+
+        .tile-name {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .tile-action-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(15, 17, 21, 0.55);
+            backdrop-filter: blur(2px);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .tile-action-btn:hover {
+            background: rgba(15, 17, 21, 0.8);
+        }
+
+        .tile-action-btn.delete:hover {
+            background: rgba(204, 51, 51, 0.85);
+        }
+
+        .tile-add {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #181b21;
+            border: 2px dashed #333844;
+            color: #5c6270;
+            font-size: 36px;
+            font-weight: 300;
+        }
+
+        .tile-add:hover {
+            border-color: #4f8cff;
+            color: #4f8cff;
+        }
+
+        .sync-status {
+            font-size: 12px;
+            color: #7d8290;
+            text-align: center;
+            margin-bottom: 15px;
+            min-height: 16px;
+        }
+
+        .sync-status.error {
+            color: #ff6b6b;
         }
 
         .file-input-wrap {
@@ -143,12 +281,13 @@
         .file-input-wrap input[type="file"] {
             flex: 1;
             font-size: 13px;
+            color: #9aa0ac;
         }
 
         .image-preview {
-            max-width: 80px;
-            max-height: 80px;
-            border-radius: 4px;
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 6px;
             display: none;
             object-fit: cover;
         }
@@ -157,85 +296,42 @@
             display: block;
         }
 
-        .sync-status {
+        .remove-image-link {
+            display: none;
             font-size: 12px;
-            color: #999;
-            text-align: center;
-            margin-bottom: 15px;
-            min-height: 16px;
+            color: #ff6b6b;
+            margin-top: 8px;
         }
 
-        .sync-status.error {
-            color: #cc3333;
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+            padding: 30px;
         }
 
-        .link-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            word-break: break-word;
-        }
-
-        .link-url {
-            font-size: 13px;
-            color: #999;
-            word-break: break-all;
-            font-family: 'Monaco', 'Courier New', monospace;
-        }
-
-        .link-card-actions {
+        .lightbox.active {
             display: flex;
-            gap: 10px;
         }
 
-        .link-card-actions button {
-            flex: 1;
-            padding: 8px;
-            font-size: 12px;
-        }
-
-        .btn-open {
-            background: #0066cc;
-        }
-
-        .btn-open:hover {
-            background: #0052a3;
-        }
-
-        .btn-edit {
-            background: #666;
-        }
-
-        .btn-edit:hover {
-            background: #888;
-        }
-
-        .btn-delete {
-            background: #cc3333;
-        }
-
-        .btn-delete:hover {
-            background: #aa2222;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .empty-state p {
-            font-size: 14px;
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
         }
 
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
             z-index: 2000;
             align-items: center;
             justify-content: center;
@@ -246,18 +342,19 @@
         }
 
         .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
+            background: #1c1f26;
+            border: 1px solid #2a2d34;
+            padding: 26px;
+            border-radius: 14px;
             max-width: 90%;
-            width: 400px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 420px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
         }
 
         .modal-content h2 {
             margin-bottom: 20px;
             font-size: 18px;
-            color: #333;
+            color: #fff;
         }
 
         .modal-actions {
@@ -271,25 +368,29 @@
         }
 
         .btn-cancel {
-            background: #999;
+            background: #333844;
         }
 
         .btn-cancel:hover {
-            background: #bbb;
+            background: #40465a;
         }
 
         @media (max-width: 600px) {
             body {
-                padding: 15px;
+                padding: 18px 14px 50px;
             }
 
             h1 {
                 font-size: 24px;
             }
 
-            .form-section,
-            .link-card {
-                padding: 15px;
+            .panel {
+                padding: 16px;
+            }
+
+            .links-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
             }
 
             .modal-content {
@@ -299,28 +400,36 @@
     </style>
 </head>
 <body>
-    <a href="https://kurgel-dashboard.netlify.app/" target="_blank" class="dashboard-link">Dashboard</a>
+    <div class="top-bar">
+        <a href="#" id="toggleTokenLink" onclick="toggleSyncTokenSection(event)">Sync Token</a>
+        <a href="https://kurgel-dashboard.netlify.app/" target="_blank">Dashboard</a>
+    </div>
 
     <div class="container">
         <h1>Link Board</h1>
+        <p class="page-subtitle">Tap a tile to open &middot; tap + to add a link or image</p>
 
         <div class="sync-status" id="syncStatus"></div>
 
-        <div style="text-align: center; margin-bottom: 15px;">
-            <a href="#" id="toggleTokenLink" onclick="toggleSyncTokenSection(event)" style="font-size: 12px; color: #999;">Sync Token settings</a>
-        </div>
-
-        <div class="form-section" id="syncTokenSection" style="display: none;">
+        <div class="panel" id="syncTokenSection" style="display: none;">
+            <div class="panel-header">
+                <h2>Sync Token</h2>
+                <button class="panel-close" onclick="hideSyncTokenSection()" aria-label="Close">&times;</button>
+            </div>
             <div class="form-group">
-                <label for="syncToken">Sync Token (needed once per device to save changes)</label>
+                <label for="syncToken">Needed once per device to save changes</label>
                 <input type="text" id="syncToken" placeholder="paste your sync token">
             </div>
             <button onclick="saveSyncToken()" id="saveTokenBtn">Save Token</button>
         </div>
 
-        <div class="form-section">
+        <div class="panel" id="addFormSection" style="display: none;">
+            <div class="panel-header">
+                <h2>Add to Board</h2>
+                <button class="panel-close" onclick="hideAddForm()" aria-label="Close">&times;</button>
+            </div>
             <div class="form-group">
-                <label for="linkName">Link Name</label>
+                <label for="linkName">Name</label>
                 <input type="text" id="linkName" placeholder="e.g., Gmail, GitHub, News">
             </div>
             <div class="form-group">
@@ -337,18 +446,18 @@
             <button onclick="addLink()" id="addLinkBtn">Add</button>
         </div>
 
-        <div class="links-section" id="linksList"></div>
+        <div class="links-grid" id="linksList"></div>
+    </div>
 
-        <div class="empty-state" id="emptyState">
-            <p>No links yet. Add one to get started!</p>
-        </div>
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightboxImg" alt="">
     </div>
 
     <div class="modal" id="editModal">
         <div class="modal-content">
-            <h2>Edit Link</h2>
+            <h2>Edit</h2>
             <div class="form-group">
-                <label for="editName">Link Name</label>
+                <label for="editName">Name</label>
                 <input type="text" id="editName">
             </div>
             <div class="form-group">
@@ -361,7 +470,7 @@
                     <input type="file" id="editImage" accept="image/*">
                     <img class="image-preview" id="editImagePreview">
                 </div>
-                <a href="#" id="removeEditImageLink" onclick="removeEditImage(event)" style="display:none; font-size: 12px; color: #cc3333;">Remove image</a>
+                <a href="#" id="removeEditImageLink" class="remove-image-link" onclick="removeEditImage(event)">Remove image</a>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -445,7 +554,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
             const token = localStorage.getItem(TOKEN_KEY) || '';
             if (!token) {
-                setSyncStatus('Saved locally only — enter your Sync Token below to save to the cloud', true);
+                setSyncStatus('Saved locally only — enter your Sync Token to save to the cloud', true);
                 showSyncTokenSection();
                 return false;
             }
@@ -456,7 +565,7 @@
                     body: JSON.stringify(links)
                 });
                 if (res.status === 401) {
-                    setSyncStatus('Saved locally only — Sync Token is wrong, check it below', true);
+                    setSyncStatus('Saved locally only — Sync Token is wrong, check it', true);
                     showSyncTokenSection();
                     return false;
                 }
@@ -546,6 +655,7 @@
 
             btn.disabled = false;
             btn.textContent = 'Add';
+            hideAddForm();
         }
 
         async function deleteLink(index) {
@@ -629,41 +739,80 @@
             window.open(url, '_blank');
         }
 
+        // Chrome (and most Chromium browsers) blocks top-level navigation to
+        // data: URLs as a phishing mitigation, so window.open(dataUrl) silently
+        // fails for image-only tiles. Show it in an in-page lightbox instead —
+        // works everywhere, no popup/navigation restrictions, and is a better
+        // fit for a TV/remote-driven device anyway.
+        function openImageLightbox(imgSrc) {
+            const lightbox = document.getElementById('lightbox');
+            document.getElementById('lightboxImg').src = imgSrc;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            closeLightbox();
+            closeModal();
+        });
+
         const SAFE_IMAGE_RE = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
 
         function safeImage(image) {
             return typeof image === 'string' && SAFE_IMAGE_RE.test(image) ? image : null;
         }
 
+        const TILE_GRADIENTS = [
+            'linear-gradient(135deg,#ff5f6d,#ffc371)',
+            'linear-gradient(135deg,#4facfe,#00f2fe)',
+            'linear-gradient(135deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(135deg,#f6d365,#fda085)',
+            'linear-gradient(135deg,#43e97b,#38f9d7)',
+            'linear-gradient(135deg,#fa709a,#fee140)',
+            'linear-gradient(135deg,#30cfd0,#7b2ff7)',
+            'linear-gradient(135deg,#ff9a8b,#ff6a88)'
+        ];
+
+        // Deterministic (not random) so a tile's color stays stable across reloads/devices
+        function tileGradient(seed) {
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+            }
+            return TILE_GRADIENTS[Math.abs(hash) % TILE_GRADIENTS.length];
+        }
+
         function renderLinks() {
             const container = document.getElementById('linksList');
-            const emptyState = document.getElementById('emptyState');
 
-            if (links.length === 0) {
-                container.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            emptyState.style.display = 'none';
-            container.innerHTML = links.map((link, index) => {
+            const tiles = links.map((link, index) => {
                 const img = safeImage(link.image);
-                const openTarget = link.url || img || '';
+                const openTarget = link.url || '';
+                const background = img ? `background:#181b21;` : `background:${tileGradient(link.name + (link.url || ''))};`;
+                const onclick = openTarget
+                    ? `openLink('${escapeHtml(openTarget)}')`
+                    : (img ? `openImageLightbox('${escapeHtml(img)}')` : '');
+
                 return `
-                <div class="link-card">
-                    ${img ? `<img class="link-image" src="${escapeHtml(img)}" alt="${escapeHtml(link.name)}">` : ''}
-                    <div class="link-card-header">
-                        <div class="link-name">${escapeHtml(link.name)}</div>
-                        ${link.url ? `<div class="link-url">${escapeHtml(link.url)}</div>` : ''}
-                    </div>
-                    <div class="link-card-actions">
-                        ${openTarget ? `<button class="btn-open" onclick="openLink('${escapeHtml(openTarget)}')">Open</button>` : ''}
-                        <button class="btn-edit" onclick="openEditModal(${index})">Edit</button>
-                        <button class="btn-delete" onclick="deleteLink(${index})">Delete</button>
+                <div class="tile" style="${background}" ${onclick ? `onclick="${onclick}"` : ''} title="${escapeHtml(link.name)}">
+                    ${img ? `<img class="tile-image" src="${escapeHtml(img)}" alt="${escapeHtml(link.name)}">` : ''}
+                    <div class="tile-scrim"></div>
+                    <div class="tile-name">${escapeHtml(link.name)}</div>
+                    <div class="tile-actions">
+                        <button class="tile-action-btn" onclick="event.stopPropagation(); openEditModal(${index})" aria-label="Edit" title="Edit">&#9998;</button>
+                        <button class="tile-action-btn delete" onclick="event.stopPropagation(); deleteLink(${index})" aria-label="Delete" title="Delete">&#128465;</button>
                     </div>
                 </div>
             `;
             }).join('');
+
+            const addTile = `<div class="tile tile-add" onclick="showAddForm()" title="Add a link or image">+</div>`;
+
+            container.innerHTML = tiles + addTile;
         }
 
         function escapeHtml(text) {
@@ -721,6 +870,16 @@
         syncTokenInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') saveSyncToken();
         });
+
+        function showAddForm() {
+            document.getElementById('addFormSection').style.display = 'block';
+            document.getElementById('linkName').focus();
+            document.getElementById('addFormSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function hideAddForm() {
+            document.getElementById('addFormSection').style.display = 'none';
+        }
 
         document.getElementById('linkName').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') document.getElementById('linkUrl').focus();
