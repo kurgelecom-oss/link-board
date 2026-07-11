@@ -309,8 +309,9 @@
         <div class="form-section">
             <div class="form-group">
                 <label for="syncToken">Sync Token (needed once per device to save changes)</label>
-                <input type="password" id="syncToken" placeholder="paste your sync token">
+                <input type="text" id="syncToken" placeholder="paste your sync token">
             </div>
+            <button onclick="saveSyncToken()" id="saveTokenBtn">Save Token</button>
         </div>
 
         <div class="form-section">
@@ -652,10 +653,22 @@
 
         const syncTokenInput = document.getElementById('syncToken');
         syncTokenInput.value = localStorage.getItem(TOKEN_KEY) || '';
-        syncTokenInput.addEventListener('change', function() {
+
+        function saveSyncToken() {
             const val = syncTokenInput.value.trim();
             if (val) localStorage.setItem(TOKEN_KEY, val);
             else localStorage.removeItem(TOKEN_KEY);
+
+            const btn = document.getElementById('saveTokenBtn');
+            const original = btn.textContent;
+            btn.textContent = val ? 'Saved ✓' : 'Cleared';
+            setTimeout(() => { btn.textContent = original; }, 1500);
+
+            if (val) setSyncStatus('Sync Token saved on this device');
+        }
+
+        syncTokenInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') saveSyncToken();
         });
 
         document.getElementById('linkName').addEventListener('keypress', function(e) {
