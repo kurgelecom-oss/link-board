@@ -32,8 +32,11 @@ function validateLinks(body) {
     if (typeof entry.name !== 'string' || !entry.name.trim() || entry.name.length > MAX_NAME_LEN) {
       return 'each link needs a non-empty name';
     }
-    if (!isValidUrl(entry.url)) return `invalid url: ${String(entry.url).slice(0, 100)}`;
-    if (entry.image !== undefined) {
+    const hasUrl = entry.url !== undefined && entry.url !== null && entry.url !== '';
+    const hasImage = entry.image !== undefined;
+    if (!hasUrl && !hasImage) return 'each link needs a url or an image';
+    if (hasUrl && !isValidUrl(entry.url)) return `invalid url: ${String(entry.url).slice(0, 100)}`;
+    if (hasImage) {
       if (typeof entry.image !== 'string' || entry.image.length > MAX_IMAGE_LEN || !IMAGE_RE.test(entry.image)) {
         return 'image must be a valid data:image/* base64 URL within size limits';
       }
