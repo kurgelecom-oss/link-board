@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Board of tiles with one link-lit tile. The 2x2 grid reads as a launcher
+       board; the cyan tile breaks the grid's symmetry so the silhouette stays
+       distinguishable from the other surfaces' icons at 16px. -->
+  <rect width="32" height="32" rx="7" fill="#252a4a"/>
+  <rect x="6" y="6" width="8.5" height="8.5" rx="2.2" fill="#8b92b8"/>
+  <rect x="17.5" y="6" width="8.5" height="8.5" rx="2.2" fill="#8b92b8"/>
+  <rect x="6" y="17.5" width="8.5" height="8.5" rx="2.2" fill="#8b92b8"/>
+  <!-- Lit tile: chain-link glyph, thick enough to survive 16px rasterisation. -->
+  <rect x="17.5" y="17.5" width="8.5" height="8.5" rx="2.2" fill="#00d4ff"/>
+  <path d="M20.4 23.6a1.8 1.8 0 0 1 0-2.5l1-1a1.8 1.8 0 0 1 2.5 2.5l-.3.3"
+        fill="none" stroke="#1e2140" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M23.6 20.4a1.8 1.8 0 0 1 0 2.5l-1 1a1.8 1.8 0 0 1-2.5-2.5l.3-.3"
+        fill="none" stroke="#1e2140" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
