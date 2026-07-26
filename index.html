@@ -558,7 +558,7 @@
 
         const DEFAULT_LINKS = [
             { name: 'Product P&L Tracker', url: 'https://product-pl-tracker.netlify.app/' },
-            { name: 'Time Allocation Board', url: 'https://time-allocation-board.netlify.app/' },
+            { name: 'Time Allocation Board', url: 'https://kurgel-dashboard.netlify.app/board' },
             { name: 'Family Dashboard', url: 'https://kurgel-dashboard.netlify.app/' },
             { name: 'Ecom Launchpad (THE ENGINE)', url: 'https://ecom-launchpad-mentor.netlify.app/' },
             { name: 'Product Test Engine', url: 'https://product-test-engine.netlify.app/' },
@@ -577,10 +577,23 @@
             return u.replace(/\/+$/, '');
         }
 
+        // Surfaces that have moved. The stored copy (cloud + localStorage) can still
+        // hold a retired URL, and writing to the cloud needs a token this page may not
+        // have — so rewrite on load instead. Idempotent: every device self-heals, and
+        // the entry keeps its position and name rather than arriving as a second card.
+        const RETIRED_URLS = {
+            'https://time-allocation-board.netlify.app': 'https://kurgel-dashboard.netlify.app/board',
+        };
+
         function mergeDefaults(list) {
-            const merged = list.slice();
+            const merged = list.map(l => {
+                const to = l.url && RETIRED_URLS[normalizeUrl(l.url)];
+                return to ? { ...l, url: to } : l;
+            });
             DEFAULT_LINKS.forEach(d => {
-                if (!merged.some(l => normalizeUrl(l.url) === normalizeUrl(d.url))) {
+                // `url` is optional — an image-only card has none, and an unguarded
+                // normalizeUrl(undefined) threw here, failing every sync.
+                if (!merged.some(l => l.url && normalizeUrl(l.url) === normalizeUrl(d.url))) {
                     merged.push(d);
                 }
             });
