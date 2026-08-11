@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/app.js --bundle --format=iife --target=chrome58 --outfile=app.legacy.js"
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0"

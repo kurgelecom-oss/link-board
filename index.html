@@ -687,12 +687,20 @@
         </div>
     </div>
 
-    <!-- The app is built from src/app.js to app.legacy.js by esbuild
-         (--format=iife --target=chrome58). It is loaded as a CLASSIC script on
-         purpose: no type="module", because the Samsung Flip panel's engine
-         predates module support and would skip the tag entirely, leaving a
-         blank board. There is deliberately no modern/nomodule pair — one
-         bundle, old syntax, every device runs the same code. -->
-    <script src="/app.legacy.js"></script>
+    <!-- Built by scripts/build.mjs from src/app.js to a CONTENT-HASHED filename
+         under /assets, which this tag is rewritten to point at. Do not edit the
+         src by hand — run `npm run build`.
+
+         The hash is what lets the bundle be cached forever while the HTML
+         revalidates: fresh markup can only ever request the bundle it was built
+         with, so an old bundle cannot pair with new HTML. That pairing is the
+         whole point — the Flip panel showed an old board because it was serving
+         a stale cached copy of the site, not because of anything it couldn't
+         parse (it is Chromium 108 and supports everything here).
+
+         Still esbuild --format=iife --target=chrome58, and still a classic
+         script rather than type="module": harmless on a modern engine, and it
+         keeps the door open for genuinely old clients. -->
+    <script src="/assets/app.legacy.734cf4a6c6.js"></script>
 </body>
 </html>
