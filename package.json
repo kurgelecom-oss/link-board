@@ -2,7 +2,13 @@
   "name": "link-board",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "esbuild src/app.js --bundle --format=iife --target=chrome58 --outfile=app.legacy.js"
+  },
   "dependencies": {
     "@netlify/blobs": "^8.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   }
 }

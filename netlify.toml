@@ -1,16 +1,24 @@
 [build]
-  command = "echo 'No build required for static site'"
+  # app.legacy.js is the only script the browser runs, and it is generated, so
+  # the site is no longer buildless. The built bundle is committed as well, so a
+  # broken build degrades to serving the last good bundle instead of leaving
+  # every device with a blank board.
+  command = "npm run build"
   publish = "."
 
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# These per-context commands OVERRIDE [build].command rather than adding to it.
+# While they were `echo` strings the real build would have been skipped on every
+# production and preview deploy — the two contexts that actually matter — so they
+# have to run the build too.
 [context.production]
-  command = "echo 'Deploying to production'"
+  command = "npm run build"
 
 [context.deploy-preview]
-  command = "echo 'Preview deployment'"
+  command = "npm run build"
 
 [[redirects]]
   from = "/api/*"
