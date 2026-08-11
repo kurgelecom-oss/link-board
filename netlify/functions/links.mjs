@@ -6,6 +6,13 @@ const MAX_NAME_LEN = 200;
 const MAX_URL_LEN = 2000;
 const MAX_IMAGE_LEN = 3_000_000; // ~2.2MB decoded, generous for a resized JPEG
 const IMAGE_RE = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
+// Mirrors MAX_PDF_ENCODED in index.html (4MiB), with a little slack so a payload
+// the client already accepted never trips a stricter server bound. The real
+// ceiling above this is Netlify's 6MB function payload limit, which applies to
+// the GET response as much as to the PUT body.
+const MAX_PDF_LEN = 4_300_000;
+const MAX_PDF_NAME_LEN = 260;
+const PDF_RE = /^data:application\/pdf;base64,[A-Za-z0-9+/]+=*$/;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -34,15 +41,31 @@ function validateLinks(body) {
     }
     const hasUrl = entry.url !== undefined && entry.url !== null && entry.url !== '';
     const hasImage = entry.image !== undefined;
-    if (!hasUrl && !hasImage) return 'each link needs a url or an image';
+    const hasPdf = entry.pdf !== undefined;
+    if (!hasUrl && !hasImage && !hasPdf) return 'each link needs a url, an image, or a pdf';
     if (hasUrl && !isValidUrl(entry.url)) return `invalid url: ${String(entry.url).slice(0, 100)}`;
     if (hasImage) {
       if (typeof entry.image !== 'string' || entry.image.length > MAX_IMAGE_LEN || !IMAGE_RE.test(entry.image)) {
         return 'image must be a valid data:image/* base64 URL within size limits';
       }
     }
-    const allowedKeys = new Set(['name', 'url', 'image']);
-    if (Object.keys(entry).some((k) => !allowedKeys.has(k))) return 'link objects may only contain name, url, image';
+    if (hasPdf) {
+      if (typeof entry.pdf !== 'string' || entry.pdf.length > MAX_PDF_LEN || !PDF_RE.test(entry.pdf)) {
+        return 'pdf must be a valid data:application/pdf base64 URL within size limits';
+      }
+    }
+    // pdfName is decoration for the tile badge, so it is optional — but it is
+    // meaningless without the pdf it names, and it gets rendered, so bound it.
+    if (entry.pdfName !== undefined) {
+      if (!hasPdf) return 'pdfName requires a pdf';
+      if (typeof entry.pdfName !== 'string' || entry.pdfName.length > MAX_PDF_NAME_LEN) {
+        return 'pdfName must be a short string';
+      }
+    }
+    const allowedKeys = new Set(['name', 'url', 'image', 'pdf', 'pdfName']);
+    if (Object.keys(entry).some((k) => !allowedKeys.has(k))) {
+      return 'link objects may only contain name, url, image, pdf, pdfName';
+    }
   }
   return null;
 }

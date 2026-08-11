@@ -263,6 +263,28 @@
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
+        /* Sits opposite .tile-actions so the two never collide. Deliberately just
+           the kind, not the filename: a 150px tile leaves ~60px here, which
+           truncates any real filename to an unreadable stub. The tile's own name
+           already identifies it; the filename lives in the hover title and the
+           edit modal. */
+        .tile-pdf-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: rgba(15, 17, 21, 0.72);
+            backdrop-filter: blur(2px);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .tile-actions {
             position: absolute;
             top: 8px;
@@ -346,6 +368,32 @@
         }
 
         .remove-image-link {
+            display: none;
+            font-size: 12px;
+            color: #ff6b6b;
+            margin-top: 8px;
+        }
+
+        /* A PDF has no thumbnail, so the picked-file feedback is its name. */
+        .file-chip {
+            display: none;
+            font-size: 12px;
+            color: #9aa0ac;
+            background: #12141a;
+            border: 1px solid #333844;
+            border-radius: 6px;
+            padding: 6px 9px;
+            max-width: 170px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-chip.active {
+            display: block;
+        }
+
+        .remove-pdf-link {
             display: none;
             font-size: 12px;
             color: #ff6b6b;
@@ -463,7 +511,7 @@
 
     <div class="container">
         <h1>Link Board</h1>
-        <p class="page-subtitle">Tap a tile to open &middot; tap + to add a link or image</p>
+        <p class="page-subtitle">Tap a tile to open &middot; tap + to add a link, image, or PDF</p>
 
         <div class="sync-status" id="syncStatus"></div>
 
@@ -489,14 +537,15 @@
                 <input type="text" id="linkName" placeholder="e.g., Gmail, GitHub, News">
             </div>
             <div class="form-group">
-                <label for="linkUrl">Link URL (optional if adding an image)</label>
+                <label for="linkUrl">Link URL (optional if adding an image or PDF)</label>
                 <input type="text" id="linkUrl" placeholder="e.g., https://gmail.com">
             </div>
             <div class="form-group">
-                <label for="linkImage">Image (optional if adding a URL)</label>
+                <label for="linkImage">Image or PDF (optional if adding a URL)</label>
                 <div class="file-input-wrap">
-                    <input type="file" id="linkImage" accept="image/*">
+                    <input type="file" id="linkImage" accept="image/*,application/pdf">
                     <img class="image-preview" id="linkImagePreview">
+                    <span class="file-chip" id="linkPdfChip"></span>
                 </div>
             </div>
             <button onclick="addLink()" id="addLinkBtn">Add</button>
@@ -517,16 +566,18 @@
                 <input type="text" id="editName">
             </div>
             <div class="form-group">
-                <label for="editUrl">Link URL (optional if there's an image)</label>
+                <label for="editUrl">Link URL (optional if there's an image or PDF)</label>
                 <input type="text" id="editUrl">
             </div>
             <div class="form-group">
-                <label for="editImage">Image (optional if there's a URL)</label>
+                <label for="editImage">Image or PDF (optional if there's a URL)</label>
                 <div class="file-input-wrap">
-                    <input type="file" id="editImage" accept="image/*">
+                    <input type="file" id="editImage" accept="image/*,application/pdf">
                     <img class="image-preview" id="editImagePreview">
+                    <span class="file-chip" id="editPdfChip"></span>
                 </div>
                 <a href="#" id="removeEditImageLink" class="remove-image-link" onclick="removeEditImage(event)">Remove image</a>
+                <a href="#" id="removeEditPdfLink" class="remove-pdf-link" onclick="removeEditPdf(event)">Remove PDF</a>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -555,6 +606,24 @@
         let pendingAddImage = null;
         let pendingEditImage = null;
         let clearEditImage = false;
+        let pendingAddPdf = null;   // { data, name }
+        let pendingEditPdf = null;  // { data, name }
+        let clearEditPdf = false;
+
+        // Everything on this board — images and now PDFs — rides inline as base64
+        // inside the one JSON blob that /api/links reads and writes, and Netlify
+        // caps a synchronous function payload at 6MB for BOTH the PUT request and
+        // the GET response. Verified against the live endpoint: a ~5MB PUT reaches
+        // the function, a ~7MB PUT is rejected at the edge with 413 before the
+        // function ever runs. Blobs itself would hold far more, but the function is
+        // the door everything has to fit through.
+        //
+        // So the caps are deliberately below that cliff, and are measured on the
+        // ENCODED string, not the file on disk: base64 inflates by ~33%, which means
+        // a "4MB PDF" is really 5.5MB of payload and would leave no room for the
+        // rest of the board. 4MB encoded ≈ a 3MB PDF.
+        const MAX_PDF_ENCODED = 4 * 1024 * 1024;
+        const MAX_BOARD_BYTES = 5 * 1024 * 1024;
 
         const DEFAULT_LINKS = [
             { name: 'Time Allocation Board', url: 'https://kurgel-dashboard.netlify.app/board' },
@@ -631,6 +700,14 @@
 
         async function persistLinks() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+            // Backstop. The add/edit paths check before mutating, so reaching this
+            // means the board grew oversized some other way (an old cloud copy, a
+            // second device). Better a named error than an opaque 413.
+            const oversize = checkBoardSize(links);
+            if (oversize) {
+                setSyncStatus('Saved locally only — ' + oversize, true);
+                return false;
+            }
             const token = localStorage.getItem(TOKEN_KEY) || '';
             if (!token) {
                 setSyncStatus('Saved locally only — enter your Sync Token to save to the cloud', true);
@@ -685,9 +762,80 @@
             });
         }
 
+        function fmtMb(bytes) {
+            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        }
+
+        // A PDF can't be downscaled the way resizeImage() shrinks a photo, so the
+        // only lever is refusing it up front. Rejecting here — rather than letting
+        // the PUT 413 later — is what stops one oversized file from silently
+        // breaking sync for every device.
+        function readPdf(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Could not read that file.'));
+                reader.onload = () => {
+                    const data = reader.result;
+                    if (!/^data:application\/pdf;base64,/.test(data)) {
+                        reject(new Error('That file is not a readable PDF.'));
+                        return;
+                    }
+                    if (data.length > MAX_PDF_ENCODED) {
+                        reject(new Error(
+                            `That PDF is too big to sync: ${fmtMb(file.size)} file becomes ${fmtMb(data.length)} once encoded. ` +
+                            `The limit is ${fmtMb(MAX_PDF_ENCODED)} encoded (roughly a 3 MB PDF). Compress it and try again.`
+                        ));
+                        return;
+                    }
+                    resolve({ data, name: file.name });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Per-file caps alone don't bound the blob — several near-limit files would
+        // still add up past what the function will carry. This checks the whole
+        // board as it would be saved.
+        function checkBoardSize(candidate) {
+            const bytes = new Blob([JSON.stringify(candidate)]).size;
+            if (bytes <= MAX_BOARD_BYTES) return null;
+            return `Saving this would make the board ${fmtMb(bytes)}, over the ${fmtMb(MAX_BOARD_BYTES)} sync limit. ` +
+                   `Delete an existing PDF or image tile first.`;
+        }
+
+        function setPdfChip(chipId, name) {
+            const chip = document.getElementById(chipId);
+            if (name) {
+                chip.textContent = name;
+                chip.classList.add('active');
+            } else {
+                chip.textContent = '';
+                chip.classList.remove('active');
+            }
+        }
+
         document.getElementById('linkImage').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file) { pendingAddImage = null; return; }
+            // One input, two kinds of file — a fresh pick always replaces whatever
+            // was staged before, so neither an image nor a PDF can linger.
+            pendingAddImage = null;
+            pendingAddPdf = null;
+            document.getElementById('linkImagePreview').classList.remove('active');
+            setPdfChip('linkPdfChip', null);
+            if (!file) return;
+
+            if (file.type === 'application/pdf') {
+                try {
+                    pendingAddPdf = await readPdf(file);
+                } catch (err) {
+                    alert(err.message);
+                    this.value = '';
+                    return;
+                }
+                setPdfChip('linkPdfChip', pendingAddPdf.name);
+                return;
+            }
+
             pendingAddImage = await resizeImage(file, 800, 0.8);
             const preview = document.getElementById('linkImagePreview');
             preview.src = pendingAddImage;
@@ -697,6 +845,23 @@
         document.getElementById('editImage').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            if (file.type === 'application/pdf') {
+                let picked;
+                try {
+                    picked = await readPdf(file);
+                } catch (err) {
+                    alert(err.message);
+                    this.value = '';
+                    return;
+                }
+                pendingEditPdf = picked;
+                clearEditPdf = false;
+                setPdfChip('editPdfChip', picked.name);
+                document.getElementById('removeEditPdfLink').style.display = 'inline';
+                return;
+            }
+
             pendingEditImage = await resizeImage(file, 800, 0.8);
             clearEditImage = false;
             document.getElementById('removeEditImageLink').style.display = 'inline';
@@ -709,14 +874,24 @@
             const name = document.getElementById('linkName').value.trim();
             const url = document.getElementById('linkUrl').value.trim();
 
-            if (!name || (!url && !pendingAddImage)) {
-                alert('Please provide a name, and either a URL or an image');
+            if (!name || (!url && !pendingAddImage && !pendingAddPdf)) {
+                alert('Please provide a name, and either a URL, an image, or a PDF');
                 return;
             }
 
             const link = { name };
             if (url) link.url = url;
             if (pendingAddImage) link.image = pendingAddImage;
+            if (pendingAddPdf) {
+                link.pdf = pendingAddPdf.data;
+                link.pdfName = pendingAddPdf.name;
+            }
+
+            const tooBig = checkBoardSize(links.concat([link]));
+            if (tooBig) {
+                alert(tooBig);
+                return;
+            }
 
             const btn = document.getElementById('addLinkBtn');
             btn.disabled = true;
@@ -730,7 +905,9 @@
             document.getElementById('linkUrl').value = '';
             document.getElementById('linkImage').value = '';
             document.getElementById('linkImagePreview').classList.remove('active');
+            setPdfChip('linkPdfChip', null);
             pendingAddImage = null;
+            pendingAddPdf = null;
 
             btn.disabled = false;
             btn.textContent = 'Add';
@@ -749,6 +926,8 @@
             editingIndex = index;
             pendingEditImage = null;
             clearEditImage = false;
+            pendingEditPdf = null;
+            clearEditPdf = false;
             const link = links[index];
             document.getElementById('editName').value = link.name;
             document.getElementById('editUrl').value = link.url || '';
@@ -764,6 +943,14 @@
                 preview.classList.remove('active');
                 removeLink.style.display = 'none';
             }
+            const removePdfLink = document.getElementById('removeEditPdfLink');
+            if (safePdf(link.pdf)) {
+                setPdfChip('editPdfChip', link.pdfName || 'document.pdf');
+                removePdfLink.style.display = 'inline';
+            } else {
+                setPdfChip('editPdfChip', null);
+                removePdfLink.style.display = 'none';
+            }
             document.getElementById('editModal').classList.add('active');
         }
 
@@ -777,11 +964,22 @@
             document.getElementById('removeEditImageLink').style.display = 'none';
         }
 
+        function removeEditPdf(e) {
+            if (e) e.preventDefault();
+            pendingEditPdf = null;
+            clearEditPdf = true;
+            document.getElementById('editImage').value = '';
+            setPdfChip('editPdfChip', null);
+            document.getElementById('removeEditPdfLink').style.display = 'none';
+        }
+
         function closeModal() {
             document.getElementById('editModal').classList.remove('active');
             editingIndex = null;
             pendingEditImage = null;
             clearEditImage = false;
+            pendingEditPdf = null;
+            clearEditPdf = false;
         }
 
         async function saveEdit() {
@@ -790,9 +988,10 @@
 
             const existing = links[editingIndex];
             const willHaveImage = pendingEditImage || (!clearEditImage && existing.image);
+            const willHavePdf = pendingEditPdf || (!clearEditPdf && existing.pdf);
 
-            if (!name || (!url && !willHaveImage)) {
-                alert('Please provide a name, and either a URL or an image');
+            if (!name || (!url && !willHaveImage && !willHavePdf)) {
+                alert('Please provide a name, and either a URL, an image, or a PDF');
                 return;
             }
 
@@ -800,6 +999,21 @@
             if (url) updated.url = url;
             if (pendingEditImage) updated.image = pendingEditImage;
             else if (!clearEditImage && existing.image) updated.image = existing.image;
+            if (pendingEditPdf) {
+                updated.pdf = pendingEditPdf.data;
+                updated.pdfName = pendingEditPdf.name;
+            } else if (!clearEditPdf && existing.pdf) {
+                updated.pdf = existing.pdf;
+                if (existing.pdfName) updated.pdfName = existing.pdfName;
+            }
+
+            const candidate = links.slice();
+            candidate[editingIndex] = updated;
+            const tooBig = checkBoardSize(candidate);
+            if (tooBig) {
+                alert(tooBig);
+                return;
+            }
 
             const btn = document.getElementById('saveEditBtn');
             btn.disabled = true;
@@ -840,9 +1054,32 @@
         });
 
         const SAFE_IMAGE_RE = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
+        const SAFE_PDF_RE = /^data:application\/pdf;base64,[A-Za-z0-9+/]+=*$/;
 
         function safeImage(image) {
             return typeof image === 'string' && SAFE_IMAGE_RE.test(image) ? image : null;
+        }
+
+        function safePdf(pdf) {
+            return typeof pdf === 'string' && SAFE_PDF_RE.test(pdf) ? pdf : null;
+        }
+
+        // Same Chrome restriction that forced the image lightbox: top-level
+        // navigation to a data: URL is blocked, so window.open(link.pdf) opens a
+        // dead tab. A Blob URL is same-origin and opens in the browser's built-in
+        // PDF viewer. Looked up by index rather than passed inline — a multi-MB
+        // data URL has no business inside an onclick attribute.
+        function openPdf(index) {
+            const link = links[index];
+            const data = safePdf(link && link.pdf);
+            if (!data) return;
+            const binary = atob(data.slice(data.indexOf(',') + 1));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+            window.open(blobUrl, '_blank');
+            // Revoking immediately can race the new tab's load; a minute is plenty.
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
         }
 
         const TILE_GRADIENTS = [
@@ -870,16 +1107,22 @@
 
             const tiles = links.map((link, index) => {
                 const img = safeImage(link.image);
+                const pdf = safePdf(link.pdf);
+                const pdfName = pdf ? (link.pdfName || 'document.pdf') : '';
                 const openTarget = link.url || '';
                 const background = img ? `background:#181b21;` : `background:${tileGradient(link.name + (link.url || ''))};`;
+                // Same precedence the image path already used — an explicit URL wins —
+                // with the PDF slotting in ahead of the image lightbox.
                 const onclick = openTarget
                     ? `openLink('${escapeHtml(openTarget)}')`
-                    : (img ? `openImageLightbox('${escapeHtml(img)}')` : '');
+                    : (pdf ? `openPdf(${index})` : (img ? `openImageLightbox('${escapeHtml(img)}')` : ''));
+                const hoverTitle = pdf ? `${link.name} — ${pdfName}` : link.name;
 
                 return `
-                <div class="tile" style="${background}" ${onclick ? `onclick="${onclick}"` : ''} title="${escapeHtml(link.name)}">
+                <div class="tile" style="${background}" ${onclick ? `onclick="${onclick}"` : ''} title="${escapeHtml(hoverTitle)}">
                     ${img ? `<img class="tile-image" src="${escapeHtml(img)}" alt="${escapeHtml(link.name)}">` : ''}
                     <div class="tile-scrim"></div>
+                    ${pdf ? `<div class="tile-pdf-badge" title="${escapeHtml(pdfName)}">&#128196; PDF</div>` : ''}
                     <div class="tile-name">${escapeHtml(link.name)}</div>
                     <div class="tile-actions">
                         <button class="tile-action-btn" onclick="event.stopPropagation(); openEditModal(${index})" aria-label="Edit" title="Edit">&#9998;</button>
@@ -889,7 +1132,7 @@
             `;
             }).join('');
 
-            const addTile = `<div class="tile tile-add" onclick="showAddForm()" title="Add a link or image">+</div>`;
+            const addTile = `<div class="tile tile-add" onclick="showAddForm()" title="Add a link, image, or PDF">+</div>`;
 
             container.innerHTML = tiles + addTile;
         }
